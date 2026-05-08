@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magazine Database</title>
+    <style>
+        body { font-family: sans-serif; background: #2c3e50; color: white; display: flex; justify-content: center; padding: 50px; }
+        .box { background: white; color: #333; padding: 30px; border-radius: 10px; width: 100%; max-width: 800px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        input { padding: 10px; margin: 10px; width: 80%; border: 1px solid #ddd; }
+        button { padding: 10px 20px; background: #3498db; color: white; border: none; cursor: pointer; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; color: #333; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #f4f4f4; }
+        #app-section { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="box">
+        <!-- LOGIN SECTION -->
+        <div id="login-section">
+            <h2>Magazine Login</h2>
+            <input type="password" id="passInput" placeholder="Password">
+            <button id="loginBtn">Login</button>
+            <p id="err" style="color:red"></p>
+        </div>
+
+        <!-- APP SECTION -->
+        <div id="app-section">
+            <h2>Subscription Data</h2>
+            <input type="text" id="search" placeholder="Search magazines..." onkeyup="searchTable()">
+            <div style="overflow-x: auto;">
+                <table id="magTable">
+                    <thead><tr id="hRow"></tr></thead>
+                    <tbody id="bRow"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIG
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVWbU0vPKMbVft_BFA9JRfwYxlgd9HSHvkB_LdRlZA82zduveAqz6HpsGFlmKY9u8c/exec';
+        const PASS = 'mag123';
+        let MASTER_DATA = [];
+
+        // LOGIN LOGIC
+        document.getElementById('loginBtn').addEventListener('click', function() {
+            const input = document.getElementById('passInput').value;
+            if (input === PASS) {
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('app-section').style.display = 'block';
+                fetchData();
+            } else {
+                document.getElementById('err').innerText = "Wrong password!";
+            }
+        });
+
+        // FETCH DATA
+        async function fetchData() {
+            try {
+                const response = await fetch(SCRIPT_URL);
+                MASTER_DATA = await response.json();
+                renderTable(MASTER_DATA);
+            } catch (e) {
+                alert("Error: Cannot reach Google Sheets. Check your Script URL.");
+            }
+        }
+
+        // RENDER TABLE
+        function renderTable(data) {
+            const hRow = document.getElementById('hRow');
+            const bRow = document.getElementById('bRow');
+            hRow.innerHTML = ""; bRow.innerHTML = "";
+            if (data.length > 0) {
+                Object.keys(data[0]).forEach(key => hRow.innerHTML += `<th>${key}</th>`);
+                data.forEach(row => {
+                    let tr = "<tr>";
+                    Object.values(row).forEach(v => tr += `<td>${v}</td>`);
+                    bRow.innerHTML += tr + "</tr>";
+                });
+            }
+        }
+
+        // SEARCH
+        function searchTable() {
+            const q = document.getElementById('search').value.toLowerCase();
+            const filtered = MASTER_DATA.filter(row => 
+                Object.values(row).some(v => String(v).toLowerCase().includes(q))
+            );
+            renderTable(filtered);
+        }
+    </script>
+</body>
+</html>
