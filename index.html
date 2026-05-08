@@ -1,96 +1,166 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magazine Database</title>
+    <title>Magazine Manager Pro</title>
     <style>
-        body { font-family: sans-serif; background: #2c3e50; color: white; display: flex; justify-content: center; padding: 50px; }
-        .box { background: white; color: #333; padding: 30px; border-radius: 10px; width: 100%; max-width: 800px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        input { padding: 10px; margin: 10px; width: 80%; border: 1px solid #ddd; }
-        button { padding: 10px 20px; background: #3498db; color: white; border: none; cursor: pointer; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; color: #333; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background: #f4f4f4; }
+        :root { --bg: #f4f7f6; --card: #ffffff; --primary: #2c3e50; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: auto; }
+        
+        /* Dashboard Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-top: 4px solid #3498db; }
+        .stat-card h3 { margin: 0; font-size: 0.9em; color: #666; }
+        .stat-card p { margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--primary); }
+
+        /* Global Update Box */
+        .global-box { background: #fff; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #3498db; display: flex; align-items: center; justify-content: space-between; }
+        
+        /* Card Layout */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .mag-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; border-left: 5px solid #ddd; }
+        .mag-card h2 { margin: 0 0 10px; font-size: 1.2em; color: var(--primary); }
+        .mag-card p { margin: 5px 0; color: #555; font-size: 0.95em; }
+        .label { font-weight: bold; color: #888; }
+        
+        /* Status Colors */
+        .Active { border-left-color: #2ecc71; }
+        .Expired { border-left-color: #e74c3c; }
+        .Due { border-left-color: #f1c40f; }
+        .Complimentary { border-left-color: #9b59b6; }
+
+        .btn-group { margin-top: 15px; display: flex; gap: 10px; }
+        button { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-del { background: #ff7675; color: white; }
+        .btn-add { background: #0984e3; color: white; margin-bottom: 20px; }
+        
+        #login-section { text-align: center; margin-top: 100px; }
         #app-section { display: none; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
     </style>
 </head>
 <body>
 
-    <div class="box">
-        <!-- LOGIN SECTION -->
-        <div id="login-section">
-            <h2>Magazine Login</h2>
-            <input type="password" id="passInput" placeholder="Password">
-            <button id="loginBtn">Login</button>
-            <p id="err" style="color:red"></p>
-        </div>
-
-        <!-- APP SECTION -->
-        <div id="app-section">
-            <h2>Subscription Data</h2>
-            <input type="text" id="search" placeholder="Search magazines..." onkeyup="searchTable()">
-            <div style="overflow-x: auto;">
-                <table id="magTable">
-                    <thead><tr id="hRow"></tr></thead>
-                    <tbody id="bRow"></tbody>
-                </table>
-            </div>
-        </div>
+<div class="container">
+    <div id="login-section">
+        <h1>Magazine Database</h1>
+        <input type="password" id="passInput" placeholder="Password">
+        <button class="btn-add" onclick="login()">Login</button>
     </div>
 
-    <script>
-        // CONFIG
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVWbU0vPKMbVft_BFA9JRfwYxlgd9HSHvkB_LdRlZA82zduveAqz6HpsGFlmKY9u8c/exec';
-        const PASS = 'mag123';
-        let MASTER_DATA = [];
+    <div id="app-section">
+        <!-- Dashboard -->
+        <div class="stats-grid">
+            <div class="stat-card"><h3>Active</h3><p id="count-Active">0</p></div>
+            <div class="stat-card"><h3>Due</h3><p id="count-Due">0</p></div>
+            <div class="stat-card"><h3>Expired</h3><p id="count-Expired">0</p></div>
+            <div class="stat-card"><h3>Complimentary</h3><p id="count-Comp">0</p></div>
+        </div>
 
-        // LOGIN LOGIC
-        document.getElementById('loginBtn').addEventListener('click', function() {
-            const input = document.getElementById('passInput').value;
-            if (input === PASS) {
-                document.getElementById('login-section').style.display = 'none';
-                document.getElementById('app-section').style.display = 'block';
-                fetchData();
-            } else {
-                document.getElementById('err').innerText = "Wrong password!";
-            }
+        <!-- Global Update -->
+        <div class="global-box">
+            <div>
+                <strong>Last Issue Dispatch</strong><br>
+                <small>Updates "Last Issue Sent" for ALL rows</small>
+            </div>
+            <div>
+                <input type="number" id="globalIssue" placeholder="Issue No.">
+                <button class="btn-add" onclick="globalUpdate()">Update All</button>
+            </div>
+        </div>
+
+        <button class="btn-add" onclick="addNew()">+ Add New Subscription</button>
+        <input type="text" id="search" placeholder="Search by name..." onkeyup="renderCards()">
+
+        <div class="card-grid" id="cardGrid">
+            <!-- Cards will appear here -->
+        </div>
+    </div>
+</div>
+
+<script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVWbU0vPKMbVft_BFA9JRfwYxlgd9HSHvkB_LdRlZA82zduveAqz6HpsGFlmKY9u8c/exec';
+    const PASS = 'mag123';
+    let MASTER_DATA = [];
+
+    function login() {
+        if(document.getElementById('passInput').value === PASS) {
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('app-section').style.display = 'block';
+            fetchData();
+        }
+    }
+
+    async function fetchData() {
+        const res = await fetch(SCRIPT_URL);
+        MASTER_DATA = await res.json();
+        updateStats();
+        renderCards();
+    }
+
+    function updateStats() {
+        const counts = { Active: 0, Due: 0, Expired: 0, Complimentary: 0 };
+        MASTER_DATA.forEach(row => {
+            if(counts[row.Status] !== undefined) counts[row.Status]++;
         });
+        document.getElementById('count-Active').innerText = counts.Active;
+        document.getElementById('count-Due').innerText = counts.Due;
+        document.getElementById('count-Expired').innerText = counts.Expired;
+        document.getElementById('count-Comp').innerText = counts.Complimentary;
+    }
 
-        // FETCH DATA
-        async function fetchData() {
-            try {
-                const response = await fetch(SCRIPT_URL);
-                MASTER_DATA = await response.json();
-                renderTable(MASTER_DATA);
-            } catch (e) {
-                alert("Error: Cannot reach Google Sheets. Check your Script URL.");
-            }
-        }
+    function renderCards() {
+        const grid = document.getElementById('cardGrid');
+        const query = document.getElementById('search').value.toLowerCase();
+        grid.innerHTML = "";
 
-        // RENDER TABLE
-        function renderTable(data) {
-            const hRow = document.getElementById('hRow');
-            const bRow = document.getElementById('bRow');
-            hRow.innerHTML = ""; bRow.innerHTML = "";
-            if (data.length > 0) {
-                Object.keys(data[0]).forEach(key => hRow.innerHTML += `<th>${key}</th>`);
-                data.forEach(row => {
-                    let tr = "<tr>";
-                    Object.values(row).forEach(v => tr += `<td>${v}</td>`);
-                    bRow.innerHTML += tr + "</tr>";
-                });
-            }
-        }
+        MASTER_DATA.filter(row => row.Name.toLowerCase().includes(query)).forEach(row => {
+            const card = document.createElement('div');
+            card.className = `mag-card ${row.Status}`;
+            card.innerHTML = `
+                <h2>${row.Name}</h2>
+                <p><span class="label">📍 Address:</span> ${row.Address}</p>
+                <p><span class="label">📱 Mobile:</span> ${row.Mobile}</p>
+                <p><span class="label">📅 Started:</span> ${row['Subscription Start']}</p>
+                <p><span class="label">📦 Last Issue:</span> ${row['Last Issue Sent']}</p>
+                <p><span class="label">🏷️ Status:</span> <strong>${row.Status}</strong></p>
+                <div class="btn-group">
+                    <button class="btn-del" onclick="deleteRow(${row.rowId})">Delete</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
 
-        // SEARCH
-        function searchTable() {
-            const q = document.getElementById('search').value.toLowerCase();
-            const filtered = MASTER_DATA.filter(row => 
-                Object.values(row).some(v => String(v).toLowerCase().includes(q))
-            );
-            renderTable(filtered);
-        }
-    </script>
+    async function globalUpdate() {
+        const val = document.getElementById('globalIssue').value;
+        if(!val) return alert("Enter a number");
+        if(!confirm("Update ALL records to Issue #" + val + "?")) return;
+        
+        await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "globalUpdate", newValue: val })
+        });
+        fetchData();
+    }
+
+    async function deleteRow(id) {
+        if(!confirm("Are you sure?")) return;
+        await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "delete", rowId: id })
+        });
+        fetchData();
+    }
+
+    function addNew() {
+        const name = prompt("Enter Name:");
+        // In a real app, we'd use a form/modal here. 
+        // For now, this is a placeholder to show it's possible.
+        alert("This would trigger a form. We can build this in Step 6!");
+    }
+</script>
 </body>
 </html>
