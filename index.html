@@ -251,11 +251,27 @@
 
     async function globalUpdate() {
         const val = document.getElementById('globalIssue').value;
-        if(!val || !confirm("Update ALL rows to Issue " + val + "?")) return;
-        await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "globalUpdate", newValue: val }) });
-        fetchData();
-    }
+        if(!val) return alert("Please enter an issue number (e.g., 34)");
+        
+        if(!confirm("Update 'Last issue Sent' to " + val + " for ALL subscribers?")) return;
+        
+        const btn = document.querySelector("button[onclick='globalUpdate()']");
+        btn.innerText = "Updating...";
 
+        try {
+            const response = await fetch(SCRIPT_URL, { 
+                method: "POST", 
+                body: JSON.stringify({ action: "globalUpdate", newValue: val }) 
+            });
+            const result = await response.text();
+            alert(result);
+            fetchData(); // Refresh cards
+        } catch (e) {
+            alert("Error: " + e);
+        } finally {
+            btn.innerText = "Update All";
+        }
+    }
     async function deleteRow(id) {
         if(!confirm("Delete this subscriber permanently?")) return;
         await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "delete", rowId: id }) });
