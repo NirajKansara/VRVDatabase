@@ -3,33 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VRV Dashboard</title>
+    <title>VRV Dasboard</title>
     <style>
-        :root { --bg: #f0f2f5; --primary: #2c3e50; --accent: #3498db; }
+        :root { --bg: #f4f7f6; --primary: #2c3e50; --accent: #3498db; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
         .container { max-width: 1100px; margin: auto; }
         
+        /* RESTORED STATS DESIGN */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: white; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; border-bottom: 4px solid #ddd; }
-        .stat-card.active-filter { border-color: var(--accent); background: #eef7ff; }
+        .stat-card { background: white; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-top: 4px solid #ddd; }
+        .stat-card h3 { margin: 0; font-size: 0.9em; color: #666; }
+        .stat-card p { margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--primary); }
+        .stat-card.active-filter { border-top-color: var(--accent); background: #eef7ff; }
 
+        /* CARD DESIGN */
         .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
-        .mag-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 6px solid #ccc; }
+        .mag-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-left: 5px solid #ddd; }
+        .mag-card h2 { margin: 0 0 10px; font-size: 1.2em; color: var(--primary); text-transform: uppercase; }
+        .mag-card p { margin: 5px 0; color: #555; font-size: 0.95em; }
+        
+        /* STATUS COLORS */
         .Active { border-left-color: #2ecc71; }
         .Expired { border-left-color: #e74c3c; }
         .Due { border-left-color: #f1c40f; }
         .Complimentary { border-left-color: #9b59b6; }
 
-        .btn-group { margin-top: 15px; display: flex; gap: 8px; }
-        button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        /* RESTORED BUTTONS */
+        .btn-group { margin-top: 15px; display: flex; gap: 10px; }
+        button { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .btn-edit { background: #3498db; color: white; }
         .btn-del { background: #ff7675; color: white; }
-        .btn-print { background: #2d3436; color: white; margin-bottom: 15px; width: 100%; font-size: 1.1em; }
+        .btn-print { background: #2d3436; color: white; margin-bottom: 20px; }
+        .btn-print:hover { background: #000; }
 
+        /* MODAL */
         #editModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:100; justify-content:center; align-items:center; }
-        .modal-content { background:white; padding:20px; border-radius:8px; width:90%; max-width:500px; max-height: 85vh; overflow-y: auto; }
-        .modal-content input { width: 95%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ddd; }
-        
+        .modal-content { background:white; padding:25px; border-radius:10px; width:90%; max-width:450px; }
+        .modal-content input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; box-sizing: border-box; }
+
         .no-print { display: block; }
     </style>
 </head>
@@ -38,13 +49,15 @@
 <div class="container">
     <div id="login-section" style="text-align:center; padding-top:100px;">
         <h1>VRV Dashboard</h1>
-        <input type="password" id="passInput" placeholder="Password" style="padding:10px;">
+        <input type="password" id="passInput" placeholder="Password" style="padding:10px; width: 200px; border-radius:5px; border:1px solid #ccc;">
         <button onclick="login()" style="background:var(--accent); color:white; padding:10px 20px;">Login</button>
     </div>
 
     <div id="app-section" style="display:none;">
-        <button class="btn-print no-print" onclick="printAddresses()">🖨️ Print Address Labels (Current List)</button>
+        <!-- RESTORED PRINT BUTTON SIZE -->
+        <button class="btn-print no-print" onclick="printAddresses()">🖨️ Print Address Labels</button>
         
+        <!-- RESTORED DASHBOARD SIZE -->
         <div class="stats-grid no-print">
             <div class="stat-card" onclick="setFilter('All')" id="stat-All"><h3>Total</h3><p id="count-All">0</p></div>
             <div class="stat-card" onclick="setFilter('Active')" id="stat-Active"><h3>Active</h3><p id="count-Active">0</p></div>
@@ -53,11 +66,13 @@
             <div class="stat-card" onclick="setFilter('Complimentary')" id="stat-Complimentary"><h3>Complimentary</h3><p id="count-Comp">0</p></div>
         </div>
 
-        <div style="background:white; padding:15px; border-radius:8px; margin-bottom:20px;" class="no-print">
-            <strong>Last Issue Dispatch: </strong>
-            <input type="number" id="globalIssue" placeholder="Issue No.">
-            <button onclick="globalUpdate()" style="background:var(--primary); color:white;">Update All Rows</button>
-            <input type="text" id="search" placeholder="Search name..." onkeyup="renderCards()" style="float:right; padding:8px;">
+        <div style="background:white; padding:15px; border-radius:8px; margin-bottom:20px; display: flex; justify-content: space-between; align-items: center;" class="no-print">
+            <div>
+                <strong>Issue Dispatch: </strong>
+                <input type="number" id="globalIssue" placeholder="No." style="width:60px; padding:5px;">
+                <button onclick="globalUpdate()" style="background:var(--primary); color:white; padding:5px 10px;">Update All</button>
+            </div>
+            <input type="text" id="search" placeholder="Search name..." onkeyup="renderCards()" style="padding:8px; width: 200px;">
         </div>
 
         <div class="card-grid" id="cardGrid"></div>
@@ -68,16 +83,16 @@
     <div class="modal-content">
         <h3>Edit Subscriber</h3>
         <div id="editFields"></div>
-        <button onclick="saveEdit()" style="background:#2ecc71; color:white; width:100%; padding:12px;">Save Changes</button>
-        <button onclick="closeModal()" style="width:100%; margin-top:10px;">Cancel</button>
+        <button onclick="saveEdit()" style="background:#2ecc71; color:white; width:100%; padding:10px;">Save Changes</button>
+        <button onclick="closeModal()" style="width:100%; margin-top:10px; background:#ccc;">Cancel</button>
     </div>
 </div>
 
 <script>
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVWbU0vPKMbVft_BFA9JRfwYxlgd9HSHvkB_LdRlZA82zduveAqz6HpsGFlmKY9u8c/exec';
-    const PASS = 'mag123';
+    const PASS = 'Varta@2020';
     
-    // THE 6 COLUMNS YOU SPECIFIED
+    // SPECIFIC COLUMNS
     const DISPLAY_FIELDS = ["Address", "Mobile Number", "Subscriptuon Start", "Last issue Sent", "Status"];
     const ALL_FIELDS = ["Name", "Address", "Mobile Number", "Subscriptuon Start", "Last issue Sent", "Status"];
 
@@ -131,12 +146,10 @@
         filtered.forEach(row => {
             const card = document.createElement('div');
             card.className = `mag-card ${row.Status || ''}`;
-            
             let content = `<h2>${row.Name || ''}</h2>`;
             DISPLAY_FIELDS.forEach(field => {
-                content += `<p><span style="color:#888; font-size:0.8em;">${field}:</span> ${row[field] || ''}</p>`;
+                content += `<p><strong>${field}:</strong> ${row[field] || ''}</p>`;
             });
-
             content += `<div class="btn-group">
                 <button class="btn-edit" onclick="openEdit(${row.rowId})">Edit</button>
                 <button class="btn-del" onclick="deleteRow(${row.rowId})">Delete</button>
@@ -151,9 +164,8 @@
         const row = MASTER_DATA.find(r => r.rowId === id);
         const container = document.getElementById('editFields');
         container.innerHTML = "";
-        
         ALL_FIELDS.forEach(key => {
-            container.innerHTML += `<label><strong>${key}</strong></label><input type="text" id="edit_${key}" value="${row[key] || ''}">`;
+            container.innerHTML += `<label>${key}</label><input type="text" id="edit_${key}" value="${row[key] || ''}">`;
         });
         document.getElementById('editModal').style.display = 'flex';
     }
@@ -163,7 +175,6 @@
         ALL_FIELDS.forEach(key => {
             updatedData[key] = document.getElementById('edit_'+key).value;
         });
-        
         await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "edit", rowId: EDITING_ROW_ID, updatedData }) });
         closeModal();
         fetchData();
@@ -195,7 +206,7 @@
         let printWindow = window.open('', '_blank');
         printWindow.document.write(`<html><head><title>Print Labels</title><style>
             body { font-family: sans-serif; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 20px; }
-            .label-box { border: 1px solid #000; padding: 10px; font-size: 13px; height: 140px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+            .label-box { border: 1px solid #000; padding: 10px; font-size: 13px; height: 140px; display: flex; flex-direction: column; justify-content: center; }
             .p-name { font-weight: bold; font-size: 15px; border-bottom: 1px solid #ccc; margin-bottom: 5px; text-transform: uppercase; }
             .p-mob { margin-top: 5px; font-weight: bold; }
         </style></head><body>`);
@@ -212,7 +223,6 @@
         
         printWindow.document.write('</body></html>');
         printWindow.document.close();
-        // Delay print slightly to ensure window is loaded
         setTimeout(() => { printWindow.print(); }, 500);
     }
 </script>
