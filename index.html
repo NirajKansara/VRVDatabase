@@ -9,13 +9,10 @@
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
         .container { max-width: 1100px; margin: auto; }
         
-        /* Dashboard Stats */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: white; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.2s; border-bottom: 4px solid #ddd; }
-        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .stat-card { background: white; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; border-bottom: 4px solid #ddd; }
         .stat-card.active-filter { border-color: var(--accent); background: #eef7ff; }
 
-        /* Card Layout */
         .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
         .mag-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 6px solid #ccc; }
         .Active { border-left-color: #2ecc71; }
@@ -23,18 +20,17 @@
         .Due { border-left-color: #f1c40f; }
         .Complimentary { border-left-color: #9b59b6; }
 
-        .btn-group { margin-top: 15px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-group { margin-top: 15px; display: flex; gap: 8px; }
         button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .btn-edit { background: #3498db; color: white; }
         .btn-del { background: #ff7675; color: white; }
-        .btn-print { background: #2d3436; color: white; margin-bottom: 15px; }
+        .btn-print { background: #2d3436; color: white; margin-bottom: 15px; width: 100%; font-size: 1.1em; }
 
-        /* Modal styling */
         #editModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:100; justify-content:center; align-items:center; }
-        .modal-content { background:white; padding:20px; border-radius:8px; width:90%; max-width:500px; max-height: 80vh; overflow-y: auto; }
-        .modal-content input { width: 95%; padding: 8px; margin: 10px 0; }
-
-        @media print { .no-print { display: none; } }
+        .modal-content { background:white; padding:20px; border-radius:8px; width:90%; max-width:500px; max-height: 85vh; overflow-y: auto; }
+        .modal-content input { width: 95%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ddd; }
+        
+        .no-print { display: block; }
     </style>
 </head>
 <body>
@@ -68,19 +64,23 @@
     </div>
 </div>
 
-<!-- Edit Modal -->
 <div id="editModal">
     <div class="modal-content">
         <h3>Edit Subscriber</h3>
         <div id="editFields"></div>
-        <button onclick="saveEdit()" style="background:#2ecc71; color:white;">Save Changes</button>
-        <button onclick="closeModal()">Cancel</button>
+        <button onclick="saveEdit()" style="background:#2ecc71; color:white; width:100%; padding:12px;">Save Changes</button>
+        <button onclick="closeModal()" style="width:100%; margin-top:10px;">Cancel</button>
     </div>
 </div>
 
 <script>
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVWbU0vPKMbVft_BFA9JRfwYxlgd9HSHvkB_LdRlZA82zduveAqz6HpsGFlmKY9u8c/exec';
     const PASS = 'mag123';
+    
+    // THE 6 COLUMNS YOU SPECIFIED
+    const DISPLAY_FIELDS = ["Address", "Mobile Number", "Subscriptuon Start", "Last issue Sent", "Status"];
+    const ALL_FIELDS = ["Name", "Address", "Mobile Number", "Subscriptuon Start", "Last issue Sent", "Status"];
+
     let MASTER_DATA = [];
     let CURRENT_FILTER = 'All';
     let EDITING_ROW_ID = null;
@@ -131,14 +131,13 @@
         filtered.forEach(row => {
             const card = document.createElement('div');
             card.className = `mag-card ${row.Status || ''}`;
-            // rowId is internal, we don't display it. All other fields displayed exactly.
+            
             let content = `<h2>${row.Name || ''}</h2>`;
-            Object.keys(row).forEach(key => {
-                if(key !== 'rowId' && key !== 'Name') {
-                    content += `<p><span style="color:#888; font-size:0.8em;">${key}:</span> ${row[key] || ''}</p>`;
-                }
+            DISPLAY_FIELDS.forEach(field => {
+                content += `<p><span style="color:#888; font-size:0.8em;">${field}:</span> ${row[field] || ''}</p>`;
             });
-            content += `<div class="btn-group no-print">
+
+            content += `<div class="btn-group">
                 <button class="btn-edit" onclick="openEdit(${row.rowId})">Edit</button>
                 <button class="btn-del" onclick="deleteRow(${row.rowId})">Delete</button>
             </div>`;
@@ -152,19 +151,17 @@
         const row = MASTER_DATA.find(r => r.rowId === id);
         const container = document.getElementById('editFields');
         container.innerHTML = "";
-        Object.keys(row).forEach(key => {
-            if(key !== 'rowId') {
-                container.innerHTML += `<label>${key}</label><input type="text" id="edit_${key}" value="${row[key] || ''}">`;
-            }
+        
+        ALL_FIELDS.forEach(key => {
+            container.innerHTML += `<label><strong>${key}</strong></label><input type="text" id="edit_${key}" value="${row[key] || ''}">`;
         });
         document.getElementById('editModal').style.display = 'flex';
     }
 
     async function saveEdit() {
         const updatedData = {};
-        const row = MASTER_DATA.find(r => r.rowId === EDITING_ROW_ID);
-        Object.keys(row).forEach(key => {
-            if(key !== 'rowId') updatedData[key] = document.getElementById('edit_'+key).value;
+        ALL_FIELDS.forEach(key => {
+            updatedData[key] = document.getElementById('edit_'+key).value;
         });
         
         await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "edit", rowId: EDITING_ROW_ID, updatedData }) });
@@ -198,23 +195,25 @@
         let printWindow = window.open('', '_blank');
         printWindow.document.write(`<html><head><title>Print Labels</title><style>
             body { font-family: sans-serif; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 20px; }
-            .label-box { border: 1px solid #ccc; padding: 10px; font-size: 12px; height: 120px; overflow: hidden; }
-            hb { display: block; font-weight: bold; border-bottom: 1px solid #eee; margin-bottom: 5px; }
+            .label-box { border: 1px solid #000; padding: 10px; font-size: 13px; height: 140px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+            .p-name { font-weight: bold; font-size: 15px; border-bottom: 1px solid #ccc; margin-bottom: 5px; text-transform: uppercase; }
+            .p-mob { margin-top: 5px; font-weight: bold; }
         </style></head><body>`);
         
         filtered.forEach(row => {
             printWindow.document.write(`
                 <div class="label-box">
-                    <hb>${row.Name || ''}</hb>
-                    ${row.Address || ''}<br>
-                    <strong>Mob:</strong> ${row.Mobile || row.MobileNumber || ''}
+                    <div class="p-name">${row.Name || ''}</div>
+                    <div class="p-addr">${row.Address || ''}</div>
+                    <div class="p-mob">Mobile Number: ${row['Mobile Number'] || ''}</div>
                 </div>
             `);
         });
         
         printWindow.document.write('</body></html>');
         printWindow.document.close();
-        printWindow.print();
+        // Delay print slightly to ensure window is loaded
+        setTimeout(() => { printWindow.print(); }, 500);
     }
 </script>
 </body>
