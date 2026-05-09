@@ -5,78 +5,76 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Magazine Manager Pro</title>
     <style>
-        :root { --bg: #f4f7f6; --card: #ffffff; --primary: #2c3e50; }
+        :root { --bg: #f0f2f5; --primary: #2c3e50; --accent: #3498db; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
         .container { max-width: 1100px; margin: auto; }
         
         /* Dashboard Stats */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-top: 4px solid #3498db; }
-        .stat-card h3 { margin: 0; font-size: 0.9em; color: #666; }
-        .stat-card p { margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--primary); }
+        .stat-card { background: white; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.2s; border-bottom: 4px solid #ddd; }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .stat-card.active-filter { border-color: var(--accent); background: #eef7ff; }
 
-        /* Global Update Box */
-        .global-box { background: #fff; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #3498db; display: flex; align-items: center; justify-content: space-between; }
-        
         /* Card Layout */
-        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .mag-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; border-left: 5px solid #ddd; }
-        .mag-card h2 { margin: 0 0 10px; font-size: 1.2em; color: var(--primary); }
-        .mag-card p { margin: 5px 0; color: #555; font-size: 0.95em; }
-        .label { font-weight: bold; color: #888; }
-        
-        /* Status Colors */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .mag-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 6px solid #ccc; }
         .Active { border-left-color: #2ecc71; }
         .Expired { border-left-color: #e74c3c; }
         .Due { border-left-color: #f1c40f; }
         .Complimentary { border-left-color: #9b59b6; }
 
-        .btn-group { margin-top: 15px; display: flex; gap: 10px; }
-        button { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-group { margin-top: 15px; display: flex; gap: 8px; flex-wrap: wrap; }
+        button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-edit { background: #3498db; color: white; }
         .btn-del { background: #ff7675; color: white; }
-        .btn-add { background: #0984e3; color: white; margin-bottom: 20px; }
-        
-        #login-section { text-align: center; margin-top: 100px; }
-        #app-section { display: none; }
-        input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .btn-print { background: #2d3436; color: white; margin-bottom: 15px; }
+
+        /* Modal styling */
+        #editModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:100; justify-content:center; align-items:center; }
+        .modal-content { background:white; padding:20px; border-radius:8px; width:90%; max-width:500px; max-height: 80vh; overflow-y: auto; }
+        .modal-content input { width: 95%; padding: 8px; margin: 10px 0; }
+
+        @media print { .no-print { display: none; } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="login-section">
-        <h1>Magazine Database</h1>
-        <input type="password" id="passInput" placeholder="Password">
-        <button class="btn-add" onclick="login()">Login</button>
+    <div id="login-section" style="text-align:center; padding-top:100px;">
+        <h1>Magazine Admin</h1>
+        <input type="password" id="passInput" placeholder="Password" style="padding:10px;">
+        <button onclick="login()" style="background:var(--accent); color:white; padding:10px 20px;">Login</button>
     </div>
 
-    <div id="app-section">
-        <!-- Dashboard -->
-        <div class="stats-grid">
-            <div class="stat-card"><h3>Active</h3><p id="count-Active">0</p></div>
-            <div class="stat-card"><h3>Due</h3><p id="count-Due">0</p></div>
-            <div class="stat-card"><h3>Expired</h3><p id="count-Expired">0</p></div>
-            <div class="stat-card"><h3>Complimentary</h3><p id="count-Comp">0</p></div>
+    <div id="app-section" style="display:none;">
+        <button class="btn-print no-print" onclick="printAddresses()">🖨️ Print Address Labels (Current List)</button>
+        
+        <div class="stats-grid no-print">
+            <div class="stat-card" onclick="setFilter('All')" id="stat-All"><h3>Total</h3><p id="count-All">0</p></div>
+            <div class="stat-card" onclick="setFilter('Active')" id="stat-Active"><h3>Active</h3><p id="count-Active">0</p></div>
+            <div class="stat-card" onclick="setFilter('Due')" id="stat-Due"><h3>Due</h3><p id="count-Due">0</p></div>
+            <div class="stat-card" onclick="setFilter('Expired')" id="stat-Expired"><h3>Expired</h3><p id="count-Expired">0</p></div>
+            <div class="stat-card" onclick="setFilter('Complimentary')" id="stat-Complimentary"><h3>Complimentary</h3><p id="count-Comp">0</p></div>
         </div>
 
-        <!-- Global Update -->
-        <div class="global-box">
-            <div>
-                <strong>Last Issue Dispatch</strong><br>
-                <small>Updates "Last Issue Sent" for ALL rows</small>
-            </div>
-            <div>
-                <input type="number" id="globalIssue" placeholder="Issue No.">
-                <button class="btn-add" onclick="globalUpdate()">Update All</button>
-            </div>
+        <div style="background:white; padding:15px; border-radius:8px; margin-bottom:20px;" class="no-print">
+            <strong>Last Issue Dispatch: </strong>
+            <input type="number" id="globalIssue" placeholder="Issue No.">
+            <button onclick="globalUpdate()" style="background:var(--primary); color:white;">Update All Rows</button>
+            <input type="text" id="search" placeholder="Search name..." onkeyup="renderCards()" style="float:right; padding:8px;">
         </div>
 
-        <button class="btn-add" onclick="addNew()">+ Add New Subscription</button>
-        <input type="text" id="search" placeholder="Search by name..." onkeyup="renderCards()">
+        <div class="card-grid" id="cardGrid"></div>
+    </div>
+</div>
 
-        <div class="card-grid" id="cardGrid">
-            <!-- Cards will appear here -->
-        </div>
+<!-- Edit Modal -->
+<div id="editModal">
+    <div class="modal-content">
+        <h3>Edit Subscriber</h3>
+        <div id="editFields"></div>
+        <button onclick="saveEdit()" style="background:#2ecc71; color:white;">Save Changes</button>
+        <button onclick="closeModal()">Cancel</button>
     </div>
 </div>
 
@@ -84,6 +82,8 @@
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVWbU0vPKMbVft_BFA9JRfwYxlgd9HSHvkB_LdRlZA82zduveAqz6HpsGFlmKY9u8c/exec';
     const PASS = 'mag123';
     let MASTER_DATA = [];
+    let CURRENT_FILTER = 'All';
+    let EDITING_ROW_ID = null;
 
     function login() {
         if(document.getElementById('passInput').value === PASS) {
@@ -100,11 +100,17 @@
         renderCards();
     }
 
+    function setFilter(f) {
+        CURRENT_FILTER = f;
+        document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
+        document.getElementById('stat-' + f).classList.add('active-filter');
+        renderCards();
+    }
+
     function updateStats() {
-        const counts = { Active: 0, Due: 0, Expired: 0, Complimentary: 0 };
-        MASTER_DATA.forEach(row => {
-            if(counts[row.Status] !== undefined) counts[row.Status]++;
-        });
+        const counts = { All: MASTER_DATA.length, Active: 0, Due: 0, Expired: 0, Complimentary: 0 };
+        MASTER_DATA.forEach(row => { if(counts[row.Status] !== undefined) counts[row.Status]++; });
+        document.getElementById('count-All').innerText = counts.All;
         document.getElementById('count-Active').innerText = counts.Active;
         document.getElementById('count-Due').innerText = counts.Due;
         document.getElementById('count-Expired').innerText = counts.Expired;
@@ -116,50 +122,99 @@
         const query = document.getElementById('search').value.toLowerCase();
         grid.innerHTML = "";
 
-        MASTER_DATA.filter(row => row.Name.toLowerCase().includes(query)).forEach(row => {
+        const filtered = MASTER_DATA.filter(row => {
+            const matchesFilter = (CURRENT_FILTER === 'All' || row.Status === CURRENT_FILTER);
+            const matchesSearch = (row.Name || "").toLowerCase().includes(query);
+            return matchesFilter && matchesSearch;
+        });
+
+        filtered.forEach(row => {
             const card = document.createElement('div');
-            card.className = `mag-card ${row.Status}`;
-            card.innerHTML = `
-                <h2>${row.Name}</h2>
-                <p><span class="label">📍 Address:</span> ${row.Address}</p>
-                <p><span class="label">📱 Mobile:</span> ${row.Mobile}</p>
-                <p><span class="label">📅 Started:</span> ${row['Subscription Start']}</p>
-                <p><span class="label">📦 Last Issue:</span> ${row['Last Issue Sent']}</p>
-                <p><span class="label">🏷️ Status:</span> <strong>${row.Status}</strong></p>
-                <div class="btn-group">
-                    <button class="btn-del" onclick="deleteRow(${row.rowId})">Delete</button>
-                </div>
-            `;
+            card.className = `mag-card ${row.Status || ''}`;
+            // rowId is internal, we don't display it. All other fields displayed exactly.
+            let content = `<h2>${row.Name || ''}</h2>`;
+            Object.keys(row).forEach(key => {
+                if(key !== 'rowId' && key !== 'Name') {
+                    content += `<p><span style="color:#888; font-size:0.8em;">${key}:</span> ${row[key] || ''}</p>`;
+                }
+            });
+            content += `<div class="btn-group no-print">
+                <button class="btn-edit" onclick="openEdit(${row.rowId})">Edit</button>
+                <button class="btn-del" onclick="deleteRow(${row.rowId})">Delete</button>
+            </div>`;
+            card.innerHTML = content;
             grid.appendChild(card);
         });
     }
 
+    function openEdit(id) {
+        EDITING_ROW_ID = id;
+        const row = MASTER_DATA.find(r => r.rowId === id);
+        const container = document.getElementById('editFields');
+        container.innerHTML = "";
+        Object.keys(row).forEach(key => {
+            if(key !== 'rowId') {
+                container.innerHTML += `<label>${key}</label><input type="text" id="edit_${key}" value="${row[key] || ''}">`;
+            }
+        });
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    async function saveEdit() {
+        const updatedData = {};
+        const row = MASTER_DATA.find(r => r.rowId === EDITING_ROW_ID);
+        Object.keys(row).forEach(key => {
+            if(key !== 'rowId') updatedData[key] = document.getElementById('edit_'+key).value;
+        });
+        
+        await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "edit", rowId: EDITING_ROW_ID, updatedData }) });
+        closeModal();
+        fetchData();
+    }
+
+    function closeModal() { document.getElementById('editModal').style.display = 'none'; }
+
     async function globalUpdate() {
         const val = document.getElementById('globalIssue').value;
-        if(!val) return alert("Enter a number");
-        if(!confirm("Update ALL records to Issue #" + val + "?")) return;
-        
-        await fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "globalUpdate", newValue: val })
-        });
+        if(!val || !confirm("Update ALL to Issue " + val + "?")) return;
+        await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "globalUpdate", newValue: val }) });
         fetchData();
     }
 
     async function deleteRow(id) {
-        if(!confirm("Are you sure?")) return;
-        await fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "delete", rowId: id })
-        });
+        if(!confirm("Delete this subscriber?")) return;
+        await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "delete", rowId: id }) });
         fetchData();
     }
 
-    function addNew() {
-        const name = prompt("Enter Name:");
-        // In a real app, we'd use a form/modal here. 
-        // For now, this is a placeholder to show it's possible.
-        alert("This would trigger a form. We can build this in Step 6!");
+    function printAddresses() {
+        const query = document.getElementById('search').value.toLowerCase();
+        const filtered = MASTER_DATA.filter(row => {
+            const matchesFilter = (CURRENT_FILTER === 'All' || row.Status === CURRENT_FILTER);
+            const matchesSearch = (row.Name || "").toLowerCase().includes(query);
+            return matchesFilter && matchesSearch;
+        });
+
+        let printWindow = window.open('', '_blank');
+        printWindow.document.write(`<html><head><title>Print Labels</title><style>
+            body { font-family: sans-serif; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 20px; }
+            .label-box { border: 1px solid #ccc; padding: 10px; font-size: 12px; height: 120px; overflow: hidden; }
+            hb { display: block; font-weight: bold; border-bottom: 1px solid #eee; margin-bottom: 5px; }
+        </style></head><body>`);
+        
+        filtered.forEach(row => {
+            printWindow.document.write(`
+                <div class="label-box">
+                    <hb>${row.Name || ''}</hb>
+                    ${row.Address || ''}<br>
+                    <strong>Mob:</strong> ${row.Mobile || row.MobileNumber || ''}
+                </div>
+            `);
+        });
+        
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.print();
     }
 </script>
 </body>
